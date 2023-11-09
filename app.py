@@ -3,7 +3,7 @@ import io
 
 import keras
 import numpy as np
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from keras.utils import img_to_array, load_img
 
 app = Flask(__name__)
@@ -27,7 +27,12 @@ def predict():
     predict_x = model.predict(img)
     num = np.argmax(predict_x, axis=1)[0]
     probe = [float(x) for x in predict_x[0]]
-    return jsonify({"probe": probe, "num": int(num)})
+
+    def generate():
+        yield jsonify({"probe": probe, "num": int(num)})
+        yield "\n"
+
+    return Response(generate(), mimetype="application/octet-stream")
 
 
 def _to_bytes(img):
