@@ -3,7 +3,10 @@ import io
 
 import keras
 import numpy as np
-from flask import Flask, request, jsonify, Response
+import tempfile
+import json
+
+from flask import Flask, request, send_file
 from keras.utils import img_to_array, load_img
 
 app = Flask(__name__)
@@ -28,11 +31,16 @@ def predict():
     num = np.argmax(predict_x, axis=1)[0]
     probe = [float(x) for x in predict_x[0]]
 
-    def generate():
-        yield jsonify({"probe": probe, "num": int(num)})
-        yield "\n"
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
+        temp_file.write(json.dumps({"probe": probe, "num": int(num)}))
+        temp_file_path = temp_file.name
 
-    return Response(generate(), mimetype="application/octet-stream")
+    return send_file(
+        temp_file_path,
+        mimetype="application/octet-stream",
+        as_attachment=True,
+        download_name="example.json"
+    )
 
 
 def _to_bytes(img):
